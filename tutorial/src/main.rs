@@ -1,4 +1,7 @@
-use rusty_engine::prelude::*;
+use rusty_engine::prelude::{
+    bevy::log::{debug, info},
+    *,
+};
 
 #[derive(Resource)]
 struct GameState {
@@ -19,10 +22,40 @@ impl Default for GameState {
     }
 }
 
+fn game_logic(engine: &mut Engine, game_state: &mut GameState) {
+    // engine.show_colliders = true;
+    for event in engine.collision_events.drain(..) {
+        debug!("event: {:?}", event);
+        if event.state == CollisionState::Begin && event.pair.one_starts_with("player") {
+            // remove the sprite the player collided with
+            for label in [event.pair.0, event.pair.1] {
+                if label != "player" {
+                    engine.sprites.remove(&label);
+                }
+            }
+            game_state.current_score += 1;
+            info!("Current score: {}", game_state.current_score);
+        }
+    }
+
+    let player = engine.sprites.get_mut("player").unwrap();
+    player.translation.x += 100.0 * engine.delta_f32;
+}
+
 fn main() {
     let mut game = Game::new();
 
     // setup game here
+    let player = game.add_sprite("player", SpritePreset::RacingCarBlue);
+    player.translation = Vec2::new(0.0, 0.0);
+    player.rotation = SOUTH_WEST;
+    player.scale = 1.0;
+    player.collision = true;
 
+    let car1 = game.add_sprite("car1", SpritePreset::RacingCarYellow);
+    car1.translation = Vec2::new(300.0, 0.0);
+    car1.collision = true;
+
+    game.add_logic(game_logic);
     game.run(GameState::default());
 }
