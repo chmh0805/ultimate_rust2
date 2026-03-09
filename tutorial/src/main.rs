@@ -23,6 +23,7 @@ impl Default for GameState {
 }
 
 fn game_logic(engine: &mut Engine, game_state: &mut GameState) {
+    // handle collisions
     // engine.show_colliders = true;
     for event in engine.collision_events.drain(..) {
         debug!("event: {:?}", event);
@@ -38,8 +39,37 @@ fn game_logic(engine: &mut Engine, game_state: &mut GameState) {
         }
     }
 
+    // handle movement
+    const MOVEMENT_SPPED: f32 = 100.0;
     let player = engine.sprites.get_mut("player").unwrap();
-    player.translation.x += 100.0 * engine.delta_f32;
+    // Up
+    if engine
+        .keyboard_state
+        .pressed_any(&[KeyCode::ArrowUp, KeyCode::KeyW])
+    {
+        player.translation.y += MOVEMENT_SPPED * engine.delta_f32;
+    }
+    // Down
+    if engine
+        .keyboard_state
+        .pressed_any(&[KeyCode::ArrowDown, KeyCode::KeyS])
+    {
+        player.translation.y -= MOVEMENT_SPPED * engine.delta_f32;
+    }
+    // Right
+    if engine
+        .keyboard_state
+        .pressed_any(&[KeyCode::ArrowLeft, KeyCode::KeyA])
+    {
+        player.translation.x -= MOVEMENT_SPPED * engine.delta_f32;
+    }
+    // Down
+    if engine
+        .keyboard_state
+        .pressed_any(&[KeyCode::ArrowRight, KeyCode::KeyD])
+    {
+        player.translation.x += MOVEMENT_SPPED * engine.delta_f32;
+    }
 }
 
 fn main() {
