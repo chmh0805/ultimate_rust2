@@ -34,6 +34,8 @@ fn game_logic(engine: &mut Engine, game_state: &mut GameState) {
                     engine.sprites.remove(&label);
                 }
             }
+            engine.audio_manager.play_sfx(SfxPreset::Impact1, 0.5);
+
             game_state.score += 1;
             // info!("Current score: {}", game_state.score);
             let score = engine.texts.get_mut("score").unwrap();
@@ -100,6 +102,8 @@ fn game_logic(engine: &mut Engine, game_state: &mut GameState) {
 
 fn main() {
     let mut game = Game::new();
+
+    game.audio_manager.play_music(MusicPreset::Classy8Bit, 0.2);
 
     // setup game here
     let player = game.add_sprite("player", SpritePreset::RacingCarBlue);
