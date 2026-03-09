@@ -5,8 +5,8 @@ use rusty_engine::prelude::{
 
 #[derive(Resource)]
 struct GameState {
-    // high_score: u32,
-    current_score: u32,
+    high_score: u32,
+    score: u32,
     enemy_index: i32,
     // spawn_timer: Timer,
 }
@@ -14,8 +14,8 @@ struct GameState {
 impl Default for GameState {
     fn default() -> Self {
         Self {
-            // high_score: 0,
-            current_score: 0,
+            high_score: 0,
+            score: 0,
             enemy_index: 0,
             // spawn_timer: Timer::from_seconds(1.0, TimerMode::Once),
         }
@@ -34,8 +34,16 @@ fn game_logic(engine: &mut Engine, game_state: &mut GameState) {
                     engine.sprites.remove(&label);
                 }
             }
-            game_state.current_score += 1;
-            info!("Current score: {}", game_state.current_score);
+            game_state.score += 1;
+            // info!("Current score: {}", game_state.score);
+            let score = engine.texts.get_mut("score").unwrap();
+            score.value = format!("Score: {}", game_state.score);
+
+            if game_state.score > game_state.high_score {
+                game_state.high_score = game_state.score;
+                let high_score = engine.texts.get_mut("high_score").unwrap();
+                high_score.value = format!("High Score: {}", game_state.high_score)
+            }
         }
     }
 
@@ -81,6 +89,13 @@ fn game_logic(engine: &mut Engine, game_state: &mut GameState) {
             car.collision = true;
         }
     }
+
+    // Reset score
+    if engine.keyboard_state.just_pressed(KeyCode::KeyR) {
+        game_state.score = 0;
+        let score = engine.texts.get_mut("score").unwrap();
+        score.value = "Score: 0".to_string();
+    }
 }
 
 fn main() {
@@ -92,6 +107,12 @@ fn main() {
     player.rotation = SOUTH_WEST;
     player.scale = 1.0;
     player.collision = true;
+
+    let score = game.add_text("score", "Score: 0");
+    score.translation = Vec2::new(520.0, 320.0);
+
+    let high_score = game.add_text("high_score", "High Score: 0");
+    high_score.translation = Vec2::new(-520.0, 320.0);
 
     game.add_logic(game_logic);
     game.run(GameState::default());
