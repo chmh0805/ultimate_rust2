@@ -1,8 +1,5 @@
 use rand::{prelude::*, rng};
-use rusty_engine::prelude::{
-    bevy::log::{debug, info},
-    *,
-};
+use rusty_engine::prelude::{bevy::log::debug, *};
 
 #[derive(Resource)]
 struct GameState {
@@ -24,6 +21,23 @@ impl Default for GameState {
 }
 
 fn game_logic(engine: &mut Engine, game_state: &mut GameState) {
+    // quit if Q is pressed
+    if engine.keyboard_state.just_pressed(KeyCode::KeyQ) {
+        engine.should_exit = true;
+    }
+
+    // keep the texts near the edges of the window
+    let offset = ((engine.time_since_startup_f64 * 3.0).cos() * 5.0) as f32;
+    let score = engine.texts.get_mut("score").unwrap();
+    score.translation.x = engine.window_dimensions.x / 2.0 - 80.0;
+    score.translation.y = engine.window_dimensions.y / 2.0 - 30.0;
+    let high_score = engine.texts.get_mut("high_score").unwrap();
+    high_score.translation.x = -engine.window_dimensions.x / 2.0 + 120.0;
+    high_score.translation.y = engine.window_dimensions.y / 2.0 - 30.0;
+    let spawn_timer = engine.texts.get_mut("spawn_timer").unwrap();
+    spawn_timer.translation.x = 0.0;
+    spawn_timer.translation.y = engine.window_dimensions.y / 2.0 - 30.0 + offset;
+
     // handle collisions
     // engine.show_colliders = true;
     for event in engine.collision_events.drain(..) {
@@ -96,9 +110,14 @@ fn game_logic(engine: &mut Engine, game_state: &mut GameState) {
     if game_state.spawn_timer.tick(engine.delta).just_finished() {
         let label = format!("car{}", game_state.enemy_index);
         game_state.enemy_index += 1;
+
+        let window_dimensions_x = engine.window_dimensions.x / 2.0;
+        let window_dimensions_y = engine.window_dimensions.y / 2.0;
         let car = engine.add_sprite(label, SpritePreset::RacingCarYellow);
-        car.translation.x = rng().random_range(-550.0..550.0);
-        car.translation.y = rng().random_range(-325.0..325.0);
+        car.translation.x =
+            rng().random_range(-window_dimensions_x + 100.0..window_dimensions_x - 100.0);
+        car.translation.y =
+            rng().random_range(-window_dimensions_y + 100.0..window_dimensions_y - 100.0);
         car.collision = true;
     } else {
         let spawn_timer = engine.texts.get_mut("spawn_timer").unwrap();
@@ -127,11 +146,14 @@ fn game_logic(engine: &mut Engine, game_state: &mut GameState) {
 fn main() {
     let mut game = Game::new();
 
-    let mut window = Window::default();
-    window.resolution = WindowResolution::new(1280, 720);
+    let window = Window {
+        resolution: WindowResolution::new(1280, 720),
+        title: "MY TUTORIAL!".to_string(),
+        ..Default::default()
+    };
     game.window_settings(window);
     game.audio_manager
-        .play_music(MusicPreset::WhimsicalPopsicle, 0.3);
+        .play_music(MusicPreset::WhimsicalPopsicle, 0.1);
 
     // setup game here
     let player = game.add_sprite("player", SpritePreset::RacingCarBlue);
