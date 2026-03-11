@@ -1,3 +1,4 @@
+use rand::{prelude::*, rng};
 use rusty_engine::prelude::{
     bevy::log::{debug, info},
     *,
@@ -8,7 +9,7 @@ struct GameState {
     high_score: u32,
     score: u32,
     enemy_index: i32,
-    // spawn_timer: Timer,
+    spawn_timer: Timer,
 }
 
 impl Default for GameState {
@@ -17,7 +18,7 @@ impl Default for GameState {
             high_score: 0,
             score: 0,
             enemy_index: 0,
-            // spawn_timer: Timer::from_seconds(1.0, TimerMode::Once),
+            spawn_timer: Timer::from_seconds(5.0, TimerMode::Repeating),
         }
     }
 }
@@ -34,7 +35,7 @@ fn game_logic(engine: &mut Engine, game_state: &mut GameState) {
                     engine.sprites.remove(&label);
                 }
             }
-            engine.audio_manager.play_sfx(SfxPreset::Impact1, 0.5);
+            engine.audio_manager.play_sfx(SfxPreset::Impact1, 0.6);
 
             game_state.score += 1;
             // info!("Current score: {}", game_state.score);
@@ -92,18 +93,45 @@ fn game_logic(engine: &mut Engine, game_state: &mut GameState) {
         }
     }
 
+    if game_state.spawn_timer.tick(engine.delta).just_finished() {
+        let label = format!("car{}", game_state.enemy_index);
+        game_state.enemy_index += 1;
+        let car = engine.add_sprite(label, SpritePreset::RacingCarYellow);
+        car.translation.x = rng().random_range(-550.0..550.0);
+        car.translation.y = rng().random_range(-325.0..325.0);
+        car.collision = true;
+    } else {
+        let spawn_timer = engine.texts.get_mut("spawn_timer").unwrap();
+        spawn_timer.value = format!(
+            "Spawn in {}",
+            game_state.spawn_timer.remaining_secs() as i32
+        );
+    }
+
     // Reset score
     if engine.keyboard_state.just_pressed(KeyCode::KeyR) {
         game_state.score = 0;
         let score = engine.texts.get_mut("score").unwrap();
         score.value = "Score: 0".to_string();
+
+        // Reset Timer
+        game_state.spawn_timer.reset();
+        let spawn_timer = engine.texts.get_mut("spawn_timer").unwrap();
+        spawn_timer.value = format!(
+            "Spawn in {}",
+            game_state.spawn_timer.remaining_secs() as i32
+        );
     }
 }
 
 fn main() {
     let mut game = Game::new();
 
-    game.audio_manager.play_music(MusicPreset::Classy8Bit, 0.2);
+    let mut window = Window::default();
+    window.resolution = WindowResolution::new(1280, 720);
+    game.window_settings(window);
+    game.audio_manager
+        .play_music(MusicPreset::WhimsicalPopsicle, 0.3);
 
     // setup game here
     let player = game.add_sprite("player", SpritePreset::RacingCarBlue);
@@ -117,6 +145,9 @@ fn main() {
 
     let high_score = game.add_text("high_score", "High Score: 0");
     high_score.translation = Vec2::new(-520.0, 320.0);
+
+    let spawn_timer = game.add_text("spawn_timer", "Spawn in 5");
+    spawn_timer.translation = Vec2::new(0.0, 320.0);
 
     game.add_logic(game_logic);
     game.run(GameState::default());
